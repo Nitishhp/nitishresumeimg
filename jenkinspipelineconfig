@@ -1,0 +1,40 @@
+pipeline {
+    agent any
+
+    environment {
+        // Define credentials for AWS and Kubernetes access
+        AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
+        AWS_DEFAULT_REGION = 'your-region'
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                // Checkout code from the repository
+                git branch: 'main', url: 'https://github.com/yourusername/your-repo.git'
+
+                // Build Docker image
+                script {
+                    def app = docker.build('hello-world-app')
+                    app.inside {
+                        sh 'echo "Building the application..."'
+                        // You might copy the index.html to the Docker container
+                        sh 'echo "Copying index.html to the container..."'
+                        sh 'cp /path/to/your/index.html /var/www/html/index.html'
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to EKS') {
+            steps {
+                // Authenticate with AWS EKS
+                sh 'aws eks update-kubeconfig --name your-cluster-name --region your-region'
+
+                // Apply Kubernetes deployment
+                sh 'kubectl apply -f your-deployment.yaml'
+            }
+        }
+    }
+}
